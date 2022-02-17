@@ -1,7 +1,9 @@
 /**
- * Copyright 2020, George Spearing, UVM AERO
- * Data Acquisition Board CS5
- * (Rear DAQ w/ fan and brake control)
+ * George Spearing
+ * February 2022
+ * Telemetry Script. Read CAN into variables
+ * Then LoRa can pick and send those variables
+ * at a different rate
  */
 
 
@@ -21,14 +23,10 @@ uint16_t lastSendDaqMessage = millis();
 #define ID_DASH_RIGHT_DATA 0x74 // receive data from dash
 #define ID_FRONT_PEDALBOARD 0x37 // receive data from pedal
 
-// Output Pins
-#define PIN_FAN_OUT 3
-#define PIN_BRAKE_OUT 4
+// Variables for CAN testing
+// from pedal board
+int wheel_left=0, wheel_right=0, damper_left=0, damper_right=0, steer=0, brake=0, pedal=0;
 
-// intialize output values
-bool brakeSig = false;
-int fanSig;
-bool autoTemp = false;
 
 void filterCAN(unsigned long canID, unsigned char buf[8]){
   switch(canID){
@@ -37,17 +35,19 @@ void filterCAN(unsigned long canID, unsigned char buf[8]){
       // digitalWrite(PIN_FAN_OUT, autoTemp) // write fan output 'high' or 'low'
       break;
     case ID_FRONT_PEDALBOARD:
-//      brakeSig = buf[5];
-       digitalWrite(PIN_BRAKE_OUT, HIGH); // write brake output 'high' or 'low'
+      wheel_left = buf[0];
+      wheel_right= buf[1];
+      damper_left= buf[2];
+      damper_right= buf[3];
+      steer= buf[4];
+      brake= buf[5];
+      pedal= buf[6];
       break;
   }
 }
 
 void setup() {
   // setup PinMode
-
-  pinMode(PIN_FAN_OUT, OUTPUT);
-  pinMode(PIN_BRAKE_OUT, OUTPUT);
 
   // IF USING INTERRUPT PIN UNCOMMENT THIS CODE:
   // pinMode(CAN_INT, INPUT)
@@ -69,10 +69,6 @@ void loop() {
   // read the CANbus for data, filter as needed
   if (CAN_MSGAVAIL == CAN.checkReceive()){
     CAN.readMsgBuf(&id, &len, buf);
-           digitalWrite(PIN_BRAKE_OUT,  ); // write brake output 'high' or 'low'
-
-    Serial.print((uint8_t) buf);
-    Serial.println();
     filterCAN(id, buf);
   }
 
